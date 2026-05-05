@@ -1,0 +1,7 @@
+#! /bin/sh
+
+FROM_VERSION=`grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/g'`
+TO_VERSION=$1
+
+sed "s/^version = \".*\"/version = \"$TO_VERSION\"/" Cargo.toml > a ; mv a Cargo.toml
+sed "s/\${VERSION}/$TO_VERSION/g" .github/templates/README.md > a ; mv a README.md
