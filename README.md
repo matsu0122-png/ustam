@@ -1,5 +1,8 @@
 # ustam
 
+![update version](https://github.com/matsu0122-png/ustam/actions/workflows/update-version.yaml/badge.svg)
+![publish](https://github.com/matsu0122-png/ustam/actions/workflows/publish.yaml/badge.svg)
+
 ## Tagline（1行概要）
 Rustで実装した拡張版 `ls` コマンド風CLIツール
 
