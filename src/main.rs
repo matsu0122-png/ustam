@@ -1,3 +1,8 @@
+//! ustam — a simplified ls command implemented in Rust.
+//!
+//! Reads a directory and prints its entries with optional sorting,
+//! long-format metadata, and gitignore-aware filtering.
+
 use std::cmp::Ordering;
 use std::env;
 use std::ffi::OsStr;
@@ -6,6 +11,7 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+/// Determines how entries are ordered in the output.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum SortKey {
     Name,
@@ -13,6 +19,7 @@ enum SortKey {
     Modified,
 }
 
+/// Runtime configuration parsed from command-line arguments.
 #[derive(Debug)]
 struct Config {
     path: PathBuf,
@@ -21,6 +28,7 @@ struct Config {
     sort_key: SortKey,
 }
 
+/// Metadata for a single directory entry, including optional extended info.
 #[derive(Debug)]
 struct FileInfo {
     name: String,
@@ -28,6 +36,7 @@ struct FileInfo {
     extension_info: Option<String>,
 }
 
+/// Patterns loaded from `.gitignore` to exclude entries from output.
 #[derive(Debug)]
 struct GitignoreRules {
     patterns: Vec<String>,
@@ -247,6 +256,8 @@ fn file_kind_label(metadata: &Metadata) -> &'static str {
     }
 }
 
+/// Converts a raw byte count to a human-readable string.
+/// Uses binary prefixes (1 KB = 1024 B), consistent with common Unix tools.
 fn human_readable_size(size: u64) -> String {
     const UNITS: [&str; 5] = ["B", "KB", "MB", "GB", "TB"];
 
@@ -414,12 +425,60 @@ fn matches_wildcard(pattern: &str, name: &str) -> bool {
 mod tests {
     use super::*;
 
+    // --- human_readable_size ---
+
     #[test]
     fn formats_sizes_for_humans() {
         assert_eq!(human_readable_size(512), "512B");
         assert_eq!(human_readable_size(1536), "1.5KB");
         assert_eq!(human_readable_size(1_048_576), "1.0MB");
     }
+
+    #[test]
+    fn formats_zero_bytes() {
+        assert_eq!(human_readable_size(0), "0B");
+    }
+
+    #[test]
+    fn formats_boundary_values() {
+        assert_eq!(human_readable_size(1023), "1023B");
+        assert_eq!(human_readable_size(1024), "1.0KB");
+        assert_eq!(human_readable_size(1024 * 1024 * 1024), "1.0GB");
+    }
+
+    // --- is_hidden_file ---
+
+    #[test]
+    fn detects_hidden_files() {
+        assert!(is_hidden_file(".gitignore"));
+        assert!(is_hidden_file(".env"));
+        assert!(!is_hidden_file("README.md"));
+        assert!(!is_hidden_file(""));
+    }
+
+    // --- is_tagline_heading ---
+
+    #[test]
+    fn detects_tagline_heading() {
+        assert!(is_tagline_heading("## Tagline"));
+        assert!(is_tagline_heading("## tagline"));
+        assert!(is_tagline_heading("## Tagline（1行概要）"));
+        assert!(is_tagline_heading("# Tagline"));
+        assert!(!is_tagline_heading("## Overview"));
+        assert!(!is_tagline_heading("Tagline"));
+    }
+
+    // --- is_pdf ---
+
+    #[test]
+    fn detects_pdf_extension() {
+        assert!(is_pdf(Path::new("report.pdf")));
+        assert!(is_pdf(Path::new("report.PDF")));
+        assert!(!is_pdf(Path::new("report.txt")));
+        assert!(!is_pdf(Path::new("report")));
+    }
+
+    // --- extract_readme_tagline ---
 
     #[test]
     fn extracts_tagline_from_readme() {
@@ -432,6 +491,23 @@ mod tests {
     }
 
     #[test]
+    fn returns_none_when_no_tagline_heading() {
+        assert_eq!(extract_readme_tagline("# Overview\nsome text\n"), None);
+    }
+
+    #[test]
+    fn returns_none_when_tagline_heading_has_no_content() {
+        assert_eq!(extract_readme_tagline("## Tagline\n"), None);
+    }
+
+    #[test]
+    fn returns_none_for_empty_readme() {
+        assert_eq!(extract_readme_tagline(""), None);
+    }
+
+    // --- extract_pdf_title ---
+
+    #[test]
     fn extracts_pdf_title_metadata() {
         assert_eq!(
             extract_pdf_title("1 0 obj << /Title (Sample PDF) >> endobj"),
@@ -440,9 +516,140 @@ mod tests {
     }
 
     #[test]
+    fn extracts_pdf_title_from_dc_title() {
+        assert_eq!(
+            extract_pdf_title("<dc:title>My Document</dc:title>"),
+            Some("My Document".to_string())
+        );
+    }
+
+    #[test]
+    fn extracts_pdf_title_from_html_title() {
+        assert_eq!(
+            extract_pdf_title("<title>Page Title</title>"),
+            Some("Page Title".to_string())
+        );
+    }
+
+    #[test]
+    fn returns_none_when_no_pdf_title() {
+        assert_eq!(extract_pdf_title("no title here"), None);
+    }
+
+    #[test]
+    fn returns_none_for_empty_pdf_title() {
+        assert_eq!(extract_pdf_title("/Title ()"), None);
+    }
+
+    #[test]
+    fn cleans_escaped_parens_in_pdf_title() {
+        // extract_between stops at the first ')' so escaped parens must be
+        // cleaned after extraction; test clean_pdf_title directly here.
+        assert_eq!(clean_pdf_title("foo \\(bar\\)".to_string()), "foo (bar)");
+        assert_eq!(clean_pdf_title("a \\\\b".to_string()), "a \\b");
+    }
+
+    // --- parse_args ---
+
+    fn args(v: &[&str]) -> impl Iterator<Item = String> {
+        v.iter().map(|s| s.to_string()).collect::<Vec<_>>().into_iter()
+    }
+
+    #[test]
+    fn parse_args_defaults() {
+        let config = parse_args(args(&[])).unwrap();
+        assert_eq!(config.path, PathBuf::from("."));
+        assert!(!config.show_hidden);
+        assert!(!config.long_format);
+        assert_eq!(config.sort_key, SortKey::Name);
+    }
+
+    #[test]
+    fn parse_args_show_hidden() {
+        let config = parse_args(args(&["-a"])).unwrap();
+        assert!(config.show_hidden);
+    }
+
+    #[test]
+    fn parse_args_long_format() {
+        let config = parse_args(args(&["-l"])).unwrap();
+        assert!(config.long_format);
+    }
+
+    #[test]
+    fn parse_args_sort_keys() {
+        assert_eq!(parse_args(args(&["-s"])).unwrap().sort_key, SortKey::Size);
+        assert_eq!(parse_args(args(&["-t"])).unwrap().sort_key, SortKey::Modified);
+        assert_eq!(parse_args(args(&["-n"])).unwrap().sort_key, SortKey::Name);
+    }
+
+    #[test]
+    fn parse_args_combined_flags() {
+        let config = parse_args(args(&["-al"])).unwrap();
+        assert!(config.show_hidden);
+        assert!(config.long_format);
+    }
+
+    #[test]
+    fn parse_args_explicit_path() {
+        let config = parse_args(args(&["src"])).unwrap();
+        assert_eq!(config.path, PathBuf::from("src"));
+    }
+
+    #[test]
+    fn parse_args_unknown_flag_returns_error() {
+        assert!(parse_args(args(&["-z"])).is_err());
+    }
+
+    #[test]
+    fn parse_args_two_paths_returns_error() {
+        assert!(parse_args(args(&["src", "docs"])).is_err());
+    }
+
+    // --- parse_gitignore_patterns ---
+
+    #[test]
+    fn parses_gitignore_patterns() {
+        let content = "# comment\n\ntarget/\n*.log\n!keep.log\n/dist\n";
+        let patterns = parse_gitignore_patterns(content);
+        assert!(!patterns.iter().any(|p| p.starts_with('#')));
+        assert!(!patterns.contains(&String::new()));
+        assert!(!patterns.iter().any(|p| p.starts_with('!')));
+        assert!(patterns.contains(&"target/".to_string()));
+        assert!(patterns.contains(&"*.log".to_string()));
+        assert!(patterns.contains(&"dist".to_string()));
+    }
+
+    // --- matches_wildcard ---
+
+    #[test]
     fn matches_simple_gitignore_patterns() {
         assert!(matches_wildcard("*.log", "error.log"));
         assert!(matches_wildcard("build-*", "build-debug"));
         assert!(!matches_wildcard("*.log", "error.txt"));
+    }
+
+    #[test]
+    fn wildcard_matches_any_suffix() {
+        assert!(matches_wildcard("*.rs", "main.rs"));
+        assert!(!matches_wildcard("*.rs", "main.go"));
+    }
+
+    #[test]
+    fn wildcard_matches_any_prefix() {
+        assert!(matches_wildcard("test_*", "test_foo"));
+        assert!(!matches_wildcard("test_*", "foo_test"));
+    }
+
+    // --- format_modified_time ---
+
+    #[test]
+    fn formats_none_time_as_dash() {
+        assert_eq!(format_modified_time(None), "-");
+    }
+
+    #[test]
+    fn formats_unix_epoch_as_zero_seconds() {
+        assert_eq!(format_modified_time(Some(UNIX_EPOCH)), "0s");
     }
 }
