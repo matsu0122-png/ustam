@@ -18,7 +18,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0 # Fetch all history for .GitInfo and .Lastmod
@@ -92,7 +92,7 @@ jobs:
         uses: mlugg/setup-zig@v2
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0 # Fetch all history for .GitInfo and .Lastmod
@@ -129,7 +129,7 @@ jobs:
     needs: publish # publish ジョブが完了した後に実行される。
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0 # Fetch all history for .GitInfo and .Lastmod

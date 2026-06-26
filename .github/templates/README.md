@@ -1,5 +1,6 @@
 # ustam
 
+![version](https://img.shields.io/badge/version-${VERSION}-blue)
 ![update version](https://github.com/matsu0122-png/ustam/actions/workflows/update_version.yaml/badge.svg)
 ![publish](https://github.com/matsu0122-png/ustam/actions/workflows/publish.yaml/badge.svg)
 

@@ -36,7 +36,7 @@ jobs:
            git commit -a -m "update version to ${{ steps.vars.outputs.tag }}" || true
 
       - name: Push branch
-        uses: ad-m/github-push-action@master
+        uses: ad-m/github-push-action@v0.8.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{ steps.vars.outputs.branch }}
