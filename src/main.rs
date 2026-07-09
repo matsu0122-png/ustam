@@ -552,7 +552,10 @@ mod tests {
     // --- parse_args ---
 
     fn args(v: &[&str]) -> impl Iterator<Item = String> {
-        v.iter().map(|s| s.to_string()).collect::<Vec<_>>().into_iter()
+        v.iter()
+            .map(|s| s.to_string())
+            .collect::<Vec<_>>()
+            .into_iter()
     }
 
     #[test]
@@ -579,7 +582,10 @@ mod tests {
     #[test]
     fn parse_args_sort_keys() {
         assert_eq!(parse_args(args(&["-s"])).unwrap().sort_key, SortKey::Size);
-        assert_eq!(parse_args(args(&["-t"])).unwrap().sort_key, SortKey::Modified);
+        assert_eq!(
+            parse_args(args(&["-t"])).unwrap().sort_key,
+            SortKey::Modified
+        );
         assert_eq!(parse_args(args(&["-n"])).unwrap().sort_key, SortKey::Name);
     }
 
