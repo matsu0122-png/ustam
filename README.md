@@ -1,7 +1,11 @@
 # ustam
 
-![update version](https://github.com/matsu0122-png/ustam/actions/workflows/update_version.yaml/badge.svg)
-![publish](https://github.com/matsu0122-png/ustam/actions/workflows/publish.yaml/badge.svg)
+![build](https://img.shields.io/github/actions/workflow/status/matsu0122-png/ustam/build.yaml?branch=main&label=build)
+![update version](https://img.shields.io/github/actions/workflow/status/matsu0122-png/ustam/update_version.yaml?label=update%20version)
+![publish](https://img.shields.io/github/actions/workflow/status/matsu0122-png/ustam/publish.yaml?label=publish)
+![Coverage Status](https://img.shields.io/coverallsCoverage/github/matsu0122-png/ustam?branch=main)
+![License](https://img.shields.io/github/license/matsu0122-png/ustam)
+![Release](https://img.shields.io/github/v/release/matsu0122-png/ustam)
 
 ## Tagline
 Rustで実装した拡張版 `ls` コマンド風CLIツール
