@@ -1,3 +1,25 @@
-baseURL = 'https://example.org/'
-locale = 'en-us'
-title = 'My New Hugo Project'
+baseURL = 'https://matsu0122-png.github.io/ustam/'
+title = 'ustam'
+theme = 'docsy/theme'
+
+enableRobotsTXT = true
+enableGitInfo = true
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
+  [markup.highlight]
+    style = 'tango'
+    noClasses = false
+
+[params]
+  copyright = 'ustam Authors'
+  github_repo = 'https://github.com/matsu0122-png/ustam'
+  github_branch = 'main'
+  offlineSearch = true
+
+  [params.ui]
+    sidebar_menu_compact = false
+    breadcrumb_disable = false
+    navbar_logo = false

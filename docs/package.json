@@ -1,0 +1,13 @@
+{
+  "name": "ustam-docs",
+  "private": true,
+  "scripts": {
+    "get:submodule": "git submodule update --init --recursive",
+    "prepare": "npm run get:submodule && (cd themes/docsy && npm install)"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.0",
+    "postcss": "^8.4.0",
+    "postcss-cli": "^11.0.0"
+  }
+}
