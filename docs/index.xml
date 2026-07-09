@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>ドキュメント on ustam</title><link>https://matsu0122-png.github.io/ustam/docs/</link><description>Recent content in ドキュメント on ustam</description><generator>Hugo</generator><language>en</language><atom:link href="https://matsu0122-png.github.io/ustam/docs/index.xml" rel="self" type="application/rss+xml"/><item><title>概要</title><link>https://matsu0122-png.github.io/ustam/docs/overview/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://matsu0122-png.github.io/ustam/docs/overview/</guid><description>&lt;p&gt;ustam は、指定したディレクトリ内のファイルやディレクトリ一覧を表示するCLIツールです。
+パスを指定しない場合は、現在のディレクトリの内容を表示します。&lt;/p&gt;
+&lt;h2 id="主な機能"&gt;主な機能&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;現在のディレクトリ、または指定したディレクトリの一覧表示&lt;/li&gt;
+&lt;li&gt;隠しファイルの表示切り替え&lt;/li&gt;
+&lt;li&gt;ファイル種別、サイズ、更新時刻を含む詳細表示&lt;/li&gt;
+&lt;li&gt;ファイルサイズ、更新日時、名前によるソート&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;.gitignore&lt;/code&gt; に書かれたファイルやディレクトリの除外&lt;/li&gt;
+&lt;li&gt;ディレクトリ内の &lt;code&gt;README.md&lt;/code&gt; からTaglineを読み取り表示&lt;/li&gt;
+&lt;li&gt;PDFファイルのタイトル情報を読み取り表示&lt;/li&gt;
+&lt;/ul&gt;</description></item><item><title>インストールと実行</title><link>https://matsu0122-png.github.io/ustam/docs/installation/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://matsu0122-png.github.io/ustam/docs/installation/</guid><description>&lt;p&gt;ustam はRustのCargoプロジェクトです。&lt;/p&gt;
+&lt;h2 id="cargo-run-で実行する"&gt;cargo run で実行する&lt;/h2&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cargo run
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;実行すると、現在のディレクトリのファイル一覧が表示されます。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-text" data-lang="text"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;Cargo.toml
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;LICENSE
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;README.md
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;src
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id="ビルドして実行する"&gt;ビルドして実行する&lt;/h2&gt;
+&lt;p&gt;毎回 &lt;code&gt;cargo run&lt;/code&gt; を使わず、実行ファイルを作ってから起動することもできます。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cargo build
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;./target/debug/ustam
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;オプションやパスも同じように指定できます。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;./target/debug/ustam -l src
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</description></item><item><title>使い方</title><link>https://matsu0122-png.github.io/ustam/docs/usage/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://matsu0122-png.github.io/ustam/docs/usage/</guid><description>&lt;p&gt;基本形式は以下です。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cargo run -- &lt;span class="o"&gt;[&lt;/span&gt;OPTIONS&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt;PATH&lt;span class="o"&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;&lt;code&gt;PATH&lt;/code&gt; を省略すると、現在のディレクトリを対象にします。&lt;/p&gt;
+&lt;h2 id="オプション"&gt;オプション&lt;/h2&gt;
+&lt;table&gt;
+	&lt;thead&gt;
+			&lt;tr&gt;
+					&lt;th&gt;オプション&lt;/th&gt;
+					&lt;th&gt;内容&lt;/th&gt;
+			&lt;/tr&gt;
+	&lt;/thead&gt;
+	&lt;tbody&gt;
+			&lt;tr&gt;
+					&lt;td&gt;&lt;code&gt;-a&lt;/code&gt;&lt;/td&gt;
+					&lt;td&gt;隠しファイルを表示する&lt;/td&gt;
+			&lt;/tr&gt;
+			&lt;tr&gt;
+					&lt;td&gt;&lt;code&gt;-l&lt;/code&gt;&lt;/td&gt;
+					&lt;td&gt;サイズ、更新日時、追加情報を表示する&lt;/td&gt;
+			&lt;/tr&gt;
+			&lt;tr&gt;
+					&lt;td&gt;&lt;code&gt;-s&lt;/code&gt;&lt;/td&gt;
+					&lt;td&gt;ファイルサイズ順にソートする&lt;/td&gt;
+			&lt;/tr&gt;
+			&lt;tr&gt;
+					&lt;td&gt;&lt;code&gt;-t&lt;/code&gt;&lt;/td&gt;
+					&lt;td&gt;更新日時順にソートする&lt;/td&gt;
+			&lt;/tr&gt;
+			&lt;tr&gt;
+					&lt;td&gt;&lt;code&gt;-n&lt;/code&gt;&lt;/td&gt;
+					&lt;td&gt;名前順にソートする&lt;/td&gt;
+			&lt;/tr&gt;
+			&lt;tr&gt;
+					&lt;td&gt;&lt;code&gt;-h&lt;/code&gt;&lt;/td&gt;
+					&lt;td&gt;ヘルプを表示する&lt;/td&gt;
+			&lt;/tr&gt;
+	&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2 id="例"&gt;例&lt;/h2&gt;
+&lt;p&gt;現在のディレクトリを表示します。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cargo run
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;&lt;code&gt;src&lt;/code&gt; ディレクトリの中身を表示します。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cargo run -- src
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;隠しファイルも表示します。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cargo run -- -a
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;詳細形式で表示します。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cargo run -- -l
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;サイズ順に並び替えます。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cargo run -- -s
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;更新日時順に並び替えます。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cargo run -- -t
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;複数のオプションを組み合わせることもできます。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cargo run -- -al .
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</description></item><item><title>About</title><link>https://matsu0122-png.github.io/ustam/docs/about/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://matsu0122-png.github.io/ustam/docs/about/</guid><description>&lt;p&gt;ustam は、Empirical Software Engineering(実証的ソフトウェア工学)の講義課題として開発されている
+Rust製CLIツールです。単なる &lt;code&gt;ls&lt;/code&gt; の実装にとどまらず、ドキュメンテーション・テスト・CI/CD・Docker・
+リリース自動化といったソフトウェアエンジニアリングの実践を目的としています。&lt;/p&gt;
+&lt;h2 id="リポジトリ"&gt;リポジトリ&lt;/h2&gt;
+&lt;p&gt;&lt;a href="https://github.com/matsu0122-png/ustam"&gt;github.com/matsu0122-png/ustam&lt;/a&gt;&lt;/p&gt;
+&lt;h2 id="ライセンス"&gt;ライセンス&lt;/h2&gt;
+&lt;p&gt;MIT License&lt;/p&gt;</description></item></channel></rss>
