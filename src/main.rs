@@ -42,6 +42,8 @@ struct GitignoreRules {
     patterns: Vec<String>,
 }
 
+/// Entry point: runs the program and prints any error to stderr with a
+/// non-zero exit code.
 fn main() {
     if let Err(error) = run() {
         eprintln!("ustam: {error}");
@@ -49,6 +51,8 @@ fn main() {
     }
 }
 
+/// Parses arguments, validates the target path, then collects, sorts, and
+/// prints the directory entries.
 fn run() -> Result<(), String> {
     let config = parse_args(env::args().skip(1))?;
     validate_target_path(&config.path)?;
@@ -63,6 +67,11 @@ fn run() -> Result<(), String> {
     Ok(())
 }
 
+/// Parses CLI arguments into a `Config`.
+///
+/// Recognizes `--help`/`-h` (prints usage and exits immediately), option
+/// flags starting with `-`, and at most one positional path argument
+/// (defaults to `.` when omitted).
 fn parse_args<I>(args: I) -> Result<Config, String>
 where
     I: IntoIterator<Item = String>,
@@ -95,6 +104,8 @@ where
     })
 }
 
+/// Applies a single `-` option argument, which may bundle multiple short
+/// flags (e.g. `-al`). Returns an error for any unrecognized flag character.
 fn apply_option(
     option: &str,
     show_hidden: &mut bool,
@@ -115,6 +126,7 @@ fn apply_option(
     Ok(())
 }
 
+/// Prints the `--help` usage text to stdout.
 fn print_help() {
     println!(
         "Usage: ustam [OPTIONS] [PATH]\n\n\
@@ -128,6 +140,7 @@ fn print_help() {
     );
 }
 
+/// Returns an error if `path` does not exist or is not a directory.
 fn validate_target_path(path: &Path) -> Result<(), String> {
     if !path.exists() {
         return Err(format!("パスが存在しません: {}", path.display()));
@@ -143,6 +156,8 @@ fn validate_target_path(path: &Path) -> Result<(), String> {
     Ok(())
 }
 
+/// Reads `config.path` and builds a `FileInfo` for each entry that is not
+/// filtered out by `should_skip_entry`.
 fn collect_file_info(config: &Config, rules: &GitignoreRules) -> io::Result<Vec<FileInfo>> {
     let mut files = Vec::new();
 
@@ -159,16 +174,21 @@ fn collect_file_info(config: &Config, rules: &GitignoreRules) -> io::Result<Vec<
     Ok(files)
 }
 
+/// Returns `true` if `entry` should be excluded from output: a hidden file
+/// when `show_hidden` is false, or a path matched by `.gitignore` rules.
 fn should_skip_entry(entry: &DirEntry, show_hidden: bool, rules: &GitignoreRules) -> bool {
     let name = entry.file_name().to_string_lossy().to_string();
 
     (!show_hidden && is_hidden_file(&name)) || rules.is_ignored(&name, &entry.path())
 }
 
+/// Returns `true` if `name` starts with a dot, per Unix hidden-file convention.
 fn is_hidden_file(name: &str) -> bool {
     name.starts_with('.')
 }
 
+/// Builds a `FileInfo` from a directory entry, including any extension
+/// info discovered by `find_extension_info`.
 fn build_file_info(entry: DirEntry) -> io::Result<FileInfo> {
     let path = entry.path();
     let metadata = entry.metadata()?;
@@ -182,6 +202,8 @@ fn build_file_info(entry: DirEntry) -> io::Result<FileInfo> {
     })
 }
 
+/// Looks up extra descriptive info for an entry: a README tagline for
+/// directories, or a title for PDF files. Returns `None` otherwise.
 fn find_extension_info(path: &Path, metadata: &Metadata) -> Option<String> {
     if metadata.is_dir() {
         return read_readme_tagline(path).map(|tagline| format!("README: {tagline}"));
@@ -194,6 +216,7 @@ fn find_extension_info(path: &Path, metadata: &Metadata) -> Option<String> {
     None
 }
 
+/// Sorts `files` in place according to `sort_key`.
 fn sort_files(files: &mut [FileInfo], sort_key: SortKey) {
     match sort_key {
         SortKey::Name => files.sort_by(compare_by_name),
@@ -202,10 +225,12 @@ fn sort_files(files: &mut [FileInfo], sort_key: SortKey) {
     }
 }
 
+/// Compares entries case-insensitively by name, ascending.
 fn compare_by_name(left: &FileInfo, right: &FileInfo) -> Ordering {
     left.name.to_lowercase().cmp(&right.name.to_lowercase())
 }
 
+/// Compares entries by file size, descending, breaking ties by name.
 fn compare_by_size(left: &FileInfo, right: &FileInfo) -> Ordering {
     right
         .metadata
@@ -214,6 +239,8 @@ fn compare_by_size(left: &FileInfo, right: &FileInfo) -> Ordering {
         .then_with(|| compare_by_name(left, right))
 }
 
+/// Compares entries by modification time, most recent first, treating
+/// unreadable timestamps as the Unix epoch and breaking ties by name.
 fn compare_by_modified(left: &FileInfo, right: &FileInfo) -> Ordering {
     let left_time = left.metadata.modified().unwrap_or(UNIX_EPOCH);
     let right_time = right.metadata.modified().unwrap_or(UNIX_EPOCH);
@@ -223,6 +250,7 @@ fn compare_by_modified(left: &FileInfo, right: &FileInfo) -> Ordering {
         .then_with(|| compare_by_name(left, right))
 }
 
+/// Prints each entry, one per line, using long format when requested.
 fn print_files(files: &[FileInfo], long_format: bool) {
     for file in files {
         if long_format {
@@ -233,6 +261,8 @@ fn print_files(files: &[FileInfo], long_format: bool) {
     }
 }
 
+/// Prints a single entry in long format: kind, size, modified time, name,
+/// and any extension info.
 fn print_long_file(file: &FileInfo) {
     let kind = file_kind_label(&file.metadata);
     let size = human_readable_size(file.metadata.len());
@@ -246,6 +276,7 @@ fn print_long_file(file: &FileInfo) {
     println!("{kind:<3} {size:>8} {modified:<14} {}{info}", file.name);
 }
 
+/// Returns a short label describing the entry kind: `dir`, `file`, or `etc`.
 fn file_kind_label(metadata: &Metadata) -> &'static str {
     if metadata.is_dir() {
         "dir"
@@ -276,6 +307,8 @@ fn human_readable_size(size: u64) -> String {
     }
 }
 
+/// Formats a modification time as seconds since the Unix epoch, or `"-"`
+/// when the time is unavailable.
 fn format_modified_time(time: Option<SystemTime>) -> String {
     let Some(time) = time else {
         return "-".to_string();
@@ -287,6 +320,7 @@ fn format_modified_time(time: Option<SystemTime>) -> String {
     }
 }
 
+/// Reads `README.md` in `directory` and extracts its tagline, if any.
 fn read_readme_tagline(directory: &Path) -> Option<String> {
     let readme_path = directory.join("README.md");
     let content = fs::read_to_string(readme_path).ok()?;
@@ -294,6 +328,8 @@ fn read_readme_tagline(directory: &Path) -> Option<String> {
     extract_readme_tagline(&content)
 }
 
+/// Returns the first non-empty, non-heading line that follows a tagline
+/// heading (see `is_tagline_heading`) in `content`.
 fn extract_readme_tagline(content: &str) -> Option<String> {
     let mut found_tagline_heading = false;
 
@@ -312,16 +348,20 @@ fn extract_readme_tagline(content: &str) -> Option<String> {
     None
 }
 
+/// Returns `true` if `line` is a Markdown heading containing "tagline"
+/// (case-insensitive).
 fn is_tagline_heading(line: &str) -> bool {
     line.starts_with('#') && line.to_lowercase().contains("tagline")
 }
 
+/// Returns `true` if `path` has a `.pdf` extension (case-insensitive).
 fn is_pdf(path: &Path) -> bool {
     path.extension()
         .and_then(OsStr::to_str)
         .is_some_and(|extension| extension.eq_ignore_ascii_case("pdf"))
 }
 
+/// Reads `path` as (lossy) text and extracts its title, if any.
 fn read_pdf_title(path: &Path) -> Option<String> {
     let bytes = fs::read(path).ok()?;
     let text = String::from_utf8_lossy(&bytes);
@@ -329,6 +369,9 @@ fn read_pdf_title(path: &Path) -> Option<String> {
     extract_pdf_title(&text)
 }
 
+/// Extracts a PDF title from raw PDF bytes decoded as text, trying the
+/// `/Title (...)` info dictionary entry, then Dublin Core `<dc:title>`,
+/// then HTML-style `<title>`, in that order.
 fn extract_pdf_title(text: &str) -> Option<String> {
     extract_between(text, "/Title (", ")")
         .or_else(|| extract_between(text, "<dc:title>", "</dc:title>"))
@@ -337,6 +380,8 @@ fn extract_pdf_title(text: &str) -> Option<String> {
         .filter(|title| !title.is_empty())
 }
 
+/// Returns the substring of `text` strictly between the first occurrence
+/// of `start` and the following occurrence of `end`.
 fn extract_between(text: &str, start: &str, end: &str) -> Option<String> {
     let start_index = text.find(start)? + start.len();
     let rest = &text[start_index..];
@@ -345,6 +390,7 @@ fn extract_between(text: &str, start: &str, end: &str) -> Option<String> {
     Some(rest[..end_index].to_string())
 }
 
+/// Unescapes PDF string escapes (`\(`, `\)`, `\\`) and trims whitespace.
 fn clean_pdf_title(title: String) -> String {
     title
         .replace("\\(", "(")
@@ -355,6 +401,8 @@ fn clean_pdf_title(title: String) -> String {
 }
 
 impl GitignoreRules {
+    /// Loads `.gitignore` patterns from `directory`, or an empty rule set if
+    /// the file is missing or unreadable.
     fn load(directory: &Path) -> Self {
         let patterns = fs::read_to_string(directory.join(".gitignore"))
             .map(|content| parse_gitignore_patterns(&content))
@@ -363,6 +411,7 @@ impl GitignoreRules {
         Self { patterns }
     }
 
+    /// Returns `true` if any loaded pattern matches `name`/`path`.
     fn is_ignored(&self, name: &str, path: &Path) -> bool {
         self.patterns
             .iter()
@@ -370,6 +419,8 @@ impl GitignoreRules {
     }
 }
 
+/// Parses `.gitignore` content into patterns, skipping blank lines,
+/// comments (`#`), and negations (`!`), and stripping a leading `/`.
 fn parse_gitignore_patterns(content: &str) -> Vec<String> {
     content
         .lines()
@@ -379,6 +430,9 @@ fn parse_gitignore_patterns(content: &str) -> Vec<String> {
         .collect()
 }
 
+/// Returns `true` if `pattern` matches `name`/`path`. A trailing `/` matches
+/// only directories by name; a `*` triggers wildcard matching; otherwise an
+/// exact name match is required.
 fn matches_gitignore_pattern(pattern: &str, name: &str, path: &Path) -> bool {
     if let Some(directory_pattern) = pattern.strip_suffix('/') {
         return path.is_dir() && directory_pattern == name;
@@ -391,6 +445,7 @@ fn matches_gitignore_pattern(pattern: &str, name: &str, path: &Path) -> bool {
     pattern == name
 }
 
+/// Matches `name` against a glob-style `pattern` containing `*` wildcards.
 fn matches_wildcard(pattern: &str, name: &str) -> bool {
     let parts: Vec<&str> = pattern.split('*').collect();
 
