@@ -6,6 +6,7 @@
 ![Coverage Status](https://img.shields.io/coverallsCoverage/github/matsu0122-png/ustam?branch=main)
 ![License](https://img.shields.io/github/license/matsu0122-png/ustam)
 ![Release](https://img.shields.io/github/v/release/matsu0122-png/ustam)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21275228.svg)](https://doi.org/10.5281/zenodo.21275228)
 
 ## Tagline
 Rustで実装した拡張版 `ls` コマンド風CLIツール
