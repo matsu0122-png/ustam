@@ -11,13 +11,13 @@
 ## Tagline
 Rustで実装した拡張版 `ls` コマンド風CLIツール
 
-## 概要
+## Overview（概要）
 このプログラムは、指定したディレクトリ内のファイルやディレクトリ一覧を表示するCLIツールです。
 パスを指定しない場合は、現在のディレクトリの内容を表示します。
 
 通常の `ls` のような一覧表示に加えて、詳細表示、並び替え、`.gitignore` を考慮した表示制御、READMEやPDFからの追加情報表示に対応しています。
 
-## 主な機能
+### 主な機能
 - 現在のディレクトリ、または指定したディレクトリの一覧表示
 - 隠しファイルの表示切り替え
 - ファイル種別、サイズ、更新時刻を含む詳細表示
@@ -25,120 +25,29 @@ Rustで実装した拡張版 `ls` コマンド風CLIツール
 - `.gitignore` に書かれたファイルやディレクトリの除外
 - ディレクトリ内の `README.md` からTaglineを読み取り表示
 - PDFファイルのタイトル情報を読み取り表示
+- シェル補完スクリプトの生成（bash/zsh/fish/powershell/elvish）
 
-## 実行方法
-このプロジェクトはRustのCargoプロジェクトです。
-以下のコマンドで実行できます。
+## Installation（インストール）
 
-```bash
-cargo run
-```
-
-実行すると、現在のディレクトリのファイル一覧が表示されます。
-
-```text
-Cargo.toml
-LICENSE
-README.md
-src
-```
-
-## Homebrewでインストールする
-macOS / Linuxでは、Homebrewでインストールできます。
+### Homebrew
+macOS / Linuxでは、Homebrewでインストールできます。補完スクリプトも自動配置されます。
 
 ```bash
 brew install matsu0122-png/ustam/ustam
 ```
 
-## 使い方
-基本形式は以下です。
+### ソースからビルド
+このプロジェクトはRustのCargoプロジェクトです。
 
 ```bash
-cargo run -- [OPTIONS] [PATH]
+git clone https://github.com/matsu0122-png/ustam.git
+cd ustam
+cargo build --release
 ```
 
-`PATH` を省略すると、現在のディレクトリを対象にします。
+生成された `target/release/ustam` を `PATH` の通った場所へ配置してください。
 
-### 例
-現在のディレクトリを表示します。
-
-```bash
-cargo run
-```
-
-`src` ディレクトリの中身を表示します。
-
-```bash
-cargo run -- src
-```
-
-隠しファイルも表示します。
-
-```bash
-cargo run -- -a
-```
-
-詳細形式で表示します。
-
-```bash
-cargo run -- -l
-```
-
-サイズ順に並び替えます。
-
-```bash
-cargo run -- -s
-```
-
-更新日時順に並び替えます。
-
-```bash
-cargo run -- -t
-```
-
-複数のオプションを組み合わせることもできます。
-
-```bash
-cargo run -- -al .
-```
-
-## オプション
-| オプション | 内容 |
-| --- | --- |
-| `-a` | 隠しファイルを表示する |
-| `-l` | サイズ、更新日時、追加情報を表示する |
-| `-s` | ファイルサイズ順にソートする |
-| `-t` | 更新日時順にソートする |
-| `-n` | 名前順にソートする |
-| `--completions <SHELL>` | 指定したシェル向けの補完スクリプトを標準出力へ書き出す（bash/zsh/fish/powershell/elvish） |
-| `-h` | ヘルプを表示する |
-| `-V` | バージョンを表示する |
-
-## シェル補完
-`--completions` オプションで、シェルの補完スクリプトを生成できます。
-
-```bash
-ustam --completions bash > /usr/local/etc/bash_completion.d/ustam
-ustam --completions zsh  > /usr/local/share/zsh/site-functions/_ustam
-```
-
-Homebrewでインストールした場合は、補完スクリプトが自動的に配置されます。
-
-## ビルドして実行する方法
-毎回 `cargo run` を使わず、実行ファイルを作ってから起動することもできます。
-
-```bash
-cargo build
-./target/debug/ustam
-```
-
-オプションやパスも同じように指定できます。
-
-```bash
-./target/debug/ustam -l src
-```
-
-## Dockerで実行する
+### Docker
 `Containerfile` からコンテナイメージをビルドし、カレントディレクトリをマウントして実行できます。
 
 ```bash
@@ -147,3 +56,76 @@ docker run --rm -v "$(pwd)":/workspace ustam -l
 ```
 
 `just` がインストールされていれば `just docker-build` / `just docker-run -l` でも同じことができます。
+ビルド済みイメージは `ghcr.io/matsu0122-png/ustam` としても配布しています。
+
+## Usage（使い方）
+基本形式は以下です。
+
+```bash
+ustam [OPTIONS] [PATH]
+```
+
+`PATH` を省略すると、現在のディレクトリを対象にします。
+開発中でインストール前に試す場合は `ustam` の代わりに `cargo run --` を使ってください。
+
+### オプション
+| オプション | 内容 |
+| --- | --- |
+| `-a`, `--all` | 隠しファイルを表示する |
+| `-l`, `--long` | サイズ、更新日時、追加情報を表示する |
+| `-s`, `--size` | ファイルサイズ順にソートする |
+| `-t`, `--time` | 更新日時順にソートする |
+| `-n`, `--name` | 名前順にソートする（デフォルト） |
+| `--completions <SHELL>` | 指定したシェル向けの補完スクリプトを標準出力へ書き出す（bash/zsh/fish/powershell/elvish） |
+| `-h`, `--help` | ヘルプを表示する |
+| `-V`, `--version` | バージョンを表示する |
+
+`-s`/`-t`/`-n` は互いに排他的で、同時に指定するとエラーになります。
+
+### シェル補完
+`--completions` オプションで、シェルの補完スクリプトを生成できます。
+
+```bash
+ustam --completions bash > /usr/local/etc/bash_completion.d/ustam
+ustam --completions zsh  > /usr/local/share/zsh/site-functions/_ustam
+```
+
+## Examples（例）
+現在のディレクトリを表示します。
+
+```bash
+ustam
+```
+
+`src` ディレクトリの中身を表示します。
+
+```bash
+ustam src
+```
+
+隠しファイルも表示します。
+
+```bash
+ustam -a
+```
+
+詳細形式で、サイズの大きい順に表示します。
+
+```bash
+ustam -sl
+```
+
+複数のオプションを組み合わせることもできます。
+
+```bash
+ustam -al .
+```
+
+## About
+`ustam` は、大学の講義「エンピリカルソフトウェア工学」の課題として開発されたプロジェクトです。
+単にCLIツールとして動作するだけでなく、テスト、CI/CD、Docker対応、リリース自動化、パッケージ配布（Homebrew）、ドキュメント整備といったソフトウェア工学のプラクティスを実践することを目的としています。
+
+エンドユーザー向けの詳細ドキュメントは [ドキュメントサイト](https://matsu0122-png.github.io/ustam/) を参照してください。
+
+## License
+[MIT License](LICENSE)
