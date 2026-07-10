@@ -4,12 +4,52 @@
 //! long-format metadata, and gitignore-aware filtering.
 
 use std::cmp::Ordering;
-use std::env;
 use std::ffi::OsStr;
 use std::fs::{self, DirEntry, Metadata};
 use std::io;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
+
+use clap::{ArgGroup, CommandFactory, Parser};
+use clap_complete::Shell;
+
+/// Command-line arguments, parsed by clap. Sort flags are mutually
+/// exclusive (Homebrew/completions expect a single canonical sort key).
+#[derive(Parser, Debug)]
+#[command(
+    name = "ustam",
+    version,
+    about = "拡張版 ls コマンド風CLIツール",
+    group(ArgGroup::new("sort").args(["sort_by_size", "sort_by_modified", "sort_by_name"]))
+)]
+struct Cli {
+    /// 一覧表示するディレクトリ（省略時はカレントディレクトリ）
+    path: Option<PathBuf>,
+
+    /// 隠しファイルを表示する
+    #[arg(short = 'a', long = "all")]
+    show_hidden: bool,
+
+    /// サイズ・更新日時・追加情報を表示する
+    #[arg(short = 'l', long = "long")]
+    long_format: bool,
+
+    /// ファイルサイズ順にソートする
+    #[arg(short = 's', long = "size")]
+    sort_by_size: bool,
+
+    /// 更新日時順にソートする
+    #[arg(short = 't', long = "time")]
+    sort_by_modified: bool,
+
+    /// 名前順にソートする（デフォルト）
+    #[arg(short = 'n', long = "name")]
+    sort_by_name: bool,
+
+    /// 指定したシェル向けの補完スクリプトを標準出力へ書き出す
+    #[arg(long = "completions", value_name = "SHELL", exclusive = true)]
+    completions: Option<Shell>,
+}
 
 /// Determines how entries are ordered in the output.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -19,7 +59,7 @@ enum SortKey {
     Modified,
 }
 
-/// Runtime configuration parsed from command-line arguments.
+/// Runtime configuration derived from parsed command-line arguments.
 #[derive(Debug)]
 struct Config {
     path: PathBuf,
@@ -52,9 +92,17 @@ fn main() {
 }
 
 /// Parses arguments, validates the target path, then collects, sorts, and
-/// prints the directory entries.
+/// prints the directory entries. Exits early after emitting a completion
+/// script when `--completions` is given.
 fn run() -> Result<(), String> {
-    let config = parse_args(env::args().skip(1))?;
+    let cli = Cli::parse();
+
+    if let Some(shell) = cli.completions {
+        print_completions(shell);
+        return Ok(());
+    }
+
+    let config = Config::from(cli);
     validate_target_path(&config.path)?;
 
     let rules = GitignoreRules::load(&config.path);
@@ -67,77 +115,33 @@ fn run() -> Result<(), String> {
     Ok(())
 }
 
-/// Parses CLI arguments into a `Config`.
-///
-/// Recognizes `--help`/`-h` (prints usage and exits immediately), option
-/// flags starting with `-`, and at most one positional path argument
-/// (defaults to `.` when omitted).
-fn parse_args<I>(args: I) -> Result<Config, String>
-where
-    I: IntoIterator<Item = String>,
-{
-    let mut path = None;
-    let mut show_hidden = false;
-    let mut long_format = false;
-    let mut sort_key = SortKey::Name;
+/// Writes a completion script for `shell` to stdout, generated from the
+/// `Cli` definition so it always matches the current set of flags.
+fn print_completions(shell: Shell) {
+    let mut command = Cli::command();
+    let name = command.get_name().to_string();
+    clap_complete::generate(shell, &mut command, name, &mut io::stdout());
+}
 
-    for arg in args {
-        if arg == "--help" || arg == "-h" {
-            print_help();
-            std::process::exit(0);
-        }
-
-        if arg.starts_with('-') && arg != "-" {
-            apply_option(&arg, &mut show_hidden, &mut long_format, &mut sort_key)?;
-        } else if path.is_none() {
-            path = Some(PathBuf::from(arg));
+impl From<Cli> for Config {
+    /// Converts parsed CLI arguments into a `Config`, defaulting the path to
+    /// `.` and the sort key to `Name` when no sort flag is set.
+    fn from(cli: Cli) -> Self {
+        let sort_key = if cli.sort_by_size {
+            SortKey::Size
+        } else if cli.sort_by_modified {
+            SortKey::Modified
         } else {
-            return Err("パスは1つだけ指定できます".to_string());
+            SortKey::Name
+        };
+
+        Self {
+            path: cli.path.unwrap_or_else(|| PathBuf::from(".")),
+            show_hidden: cli.show_hidden,
+            long_format: cli.long_format,
+            sort_key,
         }
     }
-
-    Ok(Config {
-        path: path.unwrap_or_else(|| PathBuf::from(".")),
-        show_hidden,
-        long_format,
-        sort_key,
-    })
-}
-
-/// Applies a single `-` option argument, which may bundle multiple short
-/// flags (e.g. `-al`). Returns an error for any unrecognized flag character.
-fn apply_option(
-    option: &str,
-    show_hidden: &mut bool,
-    long_format: &mut bool,
-    sort_key: &mut SortKey,
-) -> Result<(), String> {
-    for flag in option.trim_start_matches('-').chars() {
-        match flag {
-            'a' => *show_hidden = true,
-            'l' => *long_format = true,
-            's' => *sort_key = SortKey::Size,
-            't' => *sort_key = SortKey::Modified,
-            'n' => *sort_key = SortKey::Name,
-            _ => return Err(format!("未知のオプションです: -{flag}")),
-        }
-    }
-
-    Ok(())
-}
-
-/// Prints the `--help` usage text to stdout.
-fn print_help() {
-    println!(
-        "Usage: ustam [OPTIONS] [PATH]\n\n\
-         Options:\n  \
-         -a    隠しファイルを表示\n  \
-         -l    サイズ・更新日時・拡張情報を表示\n  \
-         -s    ファイルサイズ順にソート\n  \
-         -t    更新日時順にソート\n  \
-         -n    名前順にソート\n  \
-         -h    ヘルプを表示"
-    );
 }
 
 /// Returns an error if `path` does not exist or is not a directory.
@@ -604,18 +608,17 @@ mod tests {
         assert_eq!(clean_pdf_title("a \\\\b".to_string()), "a \\b");
     }
 
-    // --- parse_args ---
+    // --- Cli parsing ---
 
-    fn args(v: &[&str]) -> impl Iterator<Item = String> {
-        v.iter()
-            .map(|s| s.to_string())
-            .collect::<Vec<_>>()
-            .into_iter()
+    fn parse(v: &[&str]) -> Result<Cli, clap::Error> {
+        let mut full = vec!["ustam"];
+        full.extend_from_slice(v);
+        Cli::try_parse_from(full)
     }
 
     #[test]
     fn parse_args_defaults() {
-        let config = parse_args(args(&[])).unwrap();
+        let config = Config::from(parse(&[]).unwrap());
         assert_eq!(config.path, PathBuf::from("."));
         assert!(!config.show_hidden);
         assert!(!config.long_format);
@@ -624,47 +627,58 @@ mod tests {
 
     #[test]
     fn parse_args_show_hidden() {
-        let config = parse_args(args(&["-a"])).unwrap();
+        let config = Config::from(parse(&["-a"]).unwrap());
         assert!(config.show_hidden);
     }
 
     #[test]
     fn parse_args_long_format() {
-        let config = parse_args(args(&["-l"])).unwrap();
+        let config = Config::from(parse(&["-l"]).unwrap());
         assert!(config.long_format);
     }
 
     #[test]
     fn parse_args_sort_keys() {
-        assert_eq!(parse_args(args(&["-s"])).unwrap().sort_key, SortKey::Size);
         assert_eq!(
-            parse_args(args(&["-t"])).unwrap().sort_key,
+            Config::from(parse(&["-s"]).unwrap()).sort_key,
+            SortKey::Size
+        );
+        assert_eq!(
+            Config::from(parse(&["-t"]).unwrap()).sort_key,
             SortKey::Modified
         );
-        assert_eq!(parse_args(args(&["-n"])).unwrap().sort_key, SortKey::Name);
+        assert_eq!(
+            Config::from(parse(&["-n"]).unwrap()).sort_key,
+            SortKey::Name
+        );
     }
 
     #[test]
     fn parse_args_combined_flags() {
-        let config = parse_args(args(&["-al"])).unwrap();
+        let config = Config::from(parse(&["-al"]).unwrap());
         assert!(config.show_hidden);
         assert!(config.long_format);
     }
 
     #[test]
     fn parse_args_explicit_path() {
-        let config = parse_args(args(&["src"])).unwrap();
+        let config = Config::from(parse(&["src"]).unwrap());
         assert_eq!(config.path, PathBuf::from("src"));
     }
 
     #[test]
     fn parse_args_unknown_flag_returns_error() {
-        assert!(parse_args(args(&["-z"])).is_err());
+        assert!(parse(&["-z"]).is_err());
     }
 
     #[test]
     fn parse_args_two_paths_returns_error() {
-        assert!(parse_args(args(&["src", "docs"])).is_err());
+        assert!(parse(&["src", "docs"]).is_err());
+    }
+
+    #[test]
+    fn parse_args_conflicting_sort_flags_returns_error() {
+        assert!(parse(&["-s", "-t"]).is_err());
     }
 
     // --- parse_gitignore_patterns ---

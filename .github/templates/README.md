@@ -43,6 +43,13 @@ README.md
 src
 ```
 
+## Homebrewでインストールする
+macOS / Linuxでは、Homebrewでインストールできます。
+
+```bash
+brew install matsu0122-png/ustam/ustam
+```
+
 ## 使い方
 基本形式は以下です。
 
@@ -103,7 +110,19 @@ cargo run -- -al .
 | `-s` | ファイルサイズ順にソートする |
 | `-t` | 更新日時順にソートする |
 | `-n` | 名前順にソートする |
+| `--completions <SHELL>` | 指定したシェル向けの補完スクリプトを標準出力へ書き出す（bash/zsh/fish/powershell/elvish） |
 | `-h` | ヘルプを表示する |
+| `-V` | バージョンを表示する |
+
+## シェル補完
+`--completions` オプションで、シェルの補完スクリプトを生成できます。
+
+```bash
+ustam --completions bash > /usr/local/etc/bash_completion.d/ustam
+ustam --completions zsh  > /usr/local/share/zsh/site-functions/_ustam
+```
+
+Homebrewでインストールした場合は、補完スクリプトが自動的に配置されます。
 
 ## ビルドして実行する方法
 毎回 `cargo run` を使わず、実行ファイルを作ってから起動することもできます。
