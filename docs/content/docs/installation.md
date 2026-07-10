@@ -1,37 +1,33 @@
 ---
-title: インストールと実行
+title: インストール
 weight: 20
-description: ustam をビルド・実行する方法
+description: ustam をインストールする方法
 ---
 
-ustam はRustのCargoプロジェクトです。
+## Homebrew
 
-## cargo run で実行する
-
-```bash
-cargo run
-```
-
-実行すると、現在のディレクトリのファイル一覧が表示されます。
-
-```text
-Cargo.toml
-LICENSE
-README.md
-src
-```
-
-## ビルドして実行する
-
-毎回 `cargo run` を使わず、実行ファイルを作ってから起動することもできます。
+macOS / Linuxでは、Homebrewでインストールできます。bash/zsh/fishの補完スクリプトも自動的に配置されます。
 
 ```bash
-cargo build
-./target/debug/ustam
+brew install matsu0122-png/ustam/ustam
 ```
 
-オプションやパスも同じように指定できます。
+## Docker
+
+コンテナイメージとしても配布しています。カレントディレクトリをマウントして実行できます。
 
 ```bash
-./target/debug/ustam -l src
+docker run --rm -v "$(pwd)":/workspace ghcr.io/matsu0122-png/ustam -l
 ```
+
+## ソースからビルドする
+
+Rustのツールチェインがあれば、ソースからビルドできます。
+
+```bash
+git clone https://github.com/matsu0122-png/ustam.git
+cd ustam
+cargo build --release
+```
+
+生成された `target/release/ustam` を `PATH` の通った場所へ配置してください。
