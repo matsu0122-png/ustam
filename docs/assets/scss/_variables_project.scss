@@ -1,0 +1,11 @@
+// ustam project theme overrides.
+// See https://www.docsy.dev/docs/content/lookandfeel/#site-colors
+//
+// No `!default` here: td/_variables_forward.scss (imported earlier) already
+// assigns $primary/$secondary with !default, so a !default override here
+// would be a silent no-op. Plain assignment is what overrides it.
+
+$primary: #b7410e;
+$secondary: #2d333b;
+
+$link-color: $primary;
