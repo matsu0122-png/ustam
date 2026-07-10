@@ -118,3 +118,13 @@ cargo build
 ```bash
 ./target/debug/ustam -l src
 ```
+
+## Dockerで実行する
+`Containerfile` からコンテナイメージをビルドし、カレントディレクトリをマウントして実行できます。
+
+```bash
+docker build -t ustam -f Containerfile .
+docker run --rm -v "$(pwd)":/workspace ustam -l
+```
+
+`just` がインストールされていれば `just docker-build` / `just docker-run -l` でも同じことができます。
