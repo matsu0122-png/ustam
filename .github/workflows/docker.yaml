@@ -4,6 +4,11 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Image tag to publish (e.g. 0.1.2). Defaults to the ref name with a leading v stripped."
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -18,11 +23,14 @@ jobs:
 
       - name: Set image metadata
         id: vars
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
           # リリースタグ（v付き）からバージョン番号を取り出す。
-          # 手動実行など v で始まらない ref の場合は ref 名をそのまま使う。
+          # 手動実行時に version を指定した場合はそちらを優先する。
           REF_NAME="${GITHUB_REF_NAME}"
-          echo "version=${REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          VERSION="${INPUT_VERSION:-${REF_NAME#v}}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "revision=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
           echo "created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
 
