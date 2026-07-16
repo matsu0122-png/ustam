@@ -207,10 +207,15 @@ fn build_file_info(entry: DirEntry) -> io::Result<FileInfo> {
 }
 
 /// Looks up extra descriptive info for an entry: a README tagline for
-/// directories, or a title for PDF files. Returns `None` otherwise.
+/// directories or README.md files themselves, or a title for PDF files.
+/// Returns `None` otherwise.
 fn find_extension_info(path: &Path, metadata: &Metadata) -> Option<String> {
     if metadata.is_dir() {
         return read_readme_tagline(path).map(|tagline| format!("README: {tagline}"));
+    }
+
+    if is_readme(path) {
+        return read_tagline_from_file(path).map(|tagline| format!("README: {tagline}"));
     }
 
     if is_pdf(path) {
@@ -326,8 +331,19 @@ fn format_modified_time(time: Option<SystemTime>) -> String {
 
 /// Reads `README.md` in `directory` and extracts its tagline, if any.
 fn read_readme_tagline(directory: &Path) -> Option<String> {
-    let readme_path = directory.join("README.md");
-    let content = fs::read_to_string(readme_path).ok()?;
+    read_tagline_from_file(&directory.join("README.md"))
+}
+
+/// Returns `true` if `path`'s file name is `README.md` (case-insensitive).
+fn is_readme(path: &Path) -> bool {
+    path.file_name()
+        .and_then(OsStr::to_str)
+        .is_some_and(|name| name.eq_ignore_ascii_case("README.md"))
+}
+
+/// Reads `path` and extracts its tagline, if any.
+fn read_tagline_from_file(path: &Path) -> Option<String> {
+    let content = fs::read_to_string(path).ok()?;
 
     extract_readme_tagline(&content)
 }
@@ -535,6 +551,17 @@ mod tests {
         assert!(is_pdf(Path::new("report.PDF")));
         assert!(!is_pdf(Path::new("report.txt")));
         assert!(!is_pdf(Path::new("report")));
+    }
+
+    // --- is_readme ---
+
+    #[test]
+    fn detects_readme_file_name() {
+        assert!(is_readme(Path::new("README.md")));
+        assert!(is_readme(Path::new("readme.md")));
+        assert!(is_readme(Path::new("docs/README.md")));
+        assert!(!is_readme(Path::new("CHANGELOG.md")));
+        assert!(!is_readme(Path::new("README.txt")));
     }
 
     // --- extract_readme_tagline ---
